@@ -89,16 +89,18 @@ start() {
     pause_services
     rm -f "$FIFO"
     mkfifo "$FIFO" || die "cannot create FIFO"
-    "$PLAYER" --raw-h264 "$WIDTH" "$HEIGHT" "$FPS" "$FIFO" \
-        >"$LOG_DIR/network_tv_cedar.log" 2>&1 &
-    echo $! > "$PID_DIR/player.pid"
-    sleep 2
     setsid "$FFMPEG" -nostdin -y -loglevel error \
         -probesize "$FFMPEG_PROBESIZE" -analyzeduration "$FFMPEG_ANALYZEDURATION" \
         -fflags nobuffer -avioflags direct -max_delay 0 -i "$CHANNEL_URL" \
         -an -c:v copy -bsf:v h264_mp4toannexb -f h264 "$FIFO" \
         >"$LOG_DIR/network_tv_ffmpeg.log" 2>&1 &
     echo $! > "$PID_DIR/ffmpeg.pid"
+    # Open the HLS writer first; it blocks on the FIFO before Cedar allocates
+    # its decode buffers, avoiding a startup memory spike on 64 MiB boards.
+    sleep 1
+    "$PLAYER" --raw-h264 "$WIDTH" "$HEIGHT" "$FPS" "$FIFO" \
+        >"$LOG_DIR/network_tv_cedar.log" 2>&1 &
+    echo $! > "$PID_DIR/player.pid"
     log "started $CHANNEL_URL on $IFACE (${WIDTH}x${HEIGHT}@${FPS})"
 }
 
