@@ -67,8 +67,15 @@ start_wifi() {
         done
     fi
     $CLI -i "$IFACE" status 2>/dev/null | grep -q 'wpa_state=COMPLETED' || die "Wi-Fi association failed"
-    udhcpc -i "$IFACE" -q -n -t 5 -T 2 >/dev/null 2>&1 || true
-    ip addr show "$IFACE" 2>/dev/null | grep -q 'inet ' || die "DHCP failed on $IFACE"
+    # Older Buildroot images do not ship iproute2; use either ip or BusyBox ifconfig.
+    if ! $CLI -i "$IFACE" status 2>/dev/null | grep -q 'ip_address='; then
+        udhcpc -i "$IFACE" -q -n -t 5 -T 2 >/dev/null 2>&1 || true
+    fi
+    if command -v ip >/dev/null 2>&1; then
+        ip addr show "$IFACE" 2>/dev/null | grep -q 'inet ' || die "DHCP failed on $IFACE"
+    else
+        ifconfig "$IFACE" 2>/dev/null | grep -q 'inet addr:' || die "DHCP failed on $IFACE"
+    fi
 }
 
 start() {
