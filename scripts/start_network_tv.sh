@@ -16,11 +16,30 @@ CLI=${TV_CLI:-/root/aic_miracast/wpa24_aic_wfd_cli}
 PLAYER=${TV_PLAYER:-/root/cedar_drm_player.yuvlive}
 FFMPEG=${TV_FFMPEG:-ffmpeg}
 USB_BACKUP=${TV_USB_BACKUP:-/root/roms/kernel_backups/sii9022_cedar_physaddr_v571_deploy_20260824}
+LOWMEM=${TV_LOWMEM:-1}
+FFMPEG_PROBESIZE=${TV_FFMPEG_PROBESIZE:-32768}
+FFMPEG_ANALYZEDURATION=${TV_FFMPEG_ANALYZEDURATION:-0}
 PID_DIR=/tmp/network-tv-oneclick
 
 log() { echo "[network-tv] $*"; }
 die() { log "ERROR: $*"; exit 1; }
 running() { [ -f "$1" ] && kill -0 "$(cat "$1" 2>/dev/null)" 2>/dev/null; }
+
+pause_services() {
+    [ "$LOWMEM" = 1 ] || return 0
+    pidof gmenu2x >/dev/null 2>&1 && { : > "$PID_DIR/gmenu2x_was_running"; killall gmenu2x 2>/dev/null || true; }
+    pidof syslogd >/dev/null 2>&1 && { : > "$PID_DIR/syslogd_was_running"; /etc/init.d/S01logging stop >/dev/null 2>&1 || killall syslogd 2>/dev/null || true; }
+    pidof klogd >/dev/null 2>&1 && { : > "$PID_DIR/klogd_was_running"; killall klogd 2>/dev/null || true; }
+    sync
+    echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
+}
+
+restore_services() {
+    [ "$LOWMEM" = 1 ] || return 0
+    [ -f "$PID_DIR/gmenu2x_was_running" ] && /root/run_gmenu2x.sh >/dev/null 2>&1 &
+    [ -f "$PID_DIR/syslogd_was_running" ] && /etc/init.d/S01logging start >/dev/null 2>&1 || true
+    rm -f "$PID_DIR/gmenu2x_was_running" "$PID_DIR/syslogd_was_running" "$PID_DIR/klogd_was_running"
+}
 
 start_usb() {
     [ -d /sys/class/net/$IFACE ] && return 0
@@ -59,13 +78,17 @@ start() {
     [ -x "$SUPP" ] || die "missing dedicated supplicant: $SUPP"
     start_usb
     start_wifi
+    mkdir -p "$PID_DIR"
+    pause_services
     rm -f "$FIFO"
     mkfifo "$FIFO" || die "cannot create FIFO"
     "$PLAYER" --raw-h264 "$WIDTH" "$HEIGHT" "$FPS" "$FIFO" \
         >"$LOG_DIR/network_tv_cedar.log" 2>&1 &
     echo $! > "$PID_DIR/player.pid"
     sleep 2
-    setsid "$FFMPEG" -nostdin -y -loglevel error -i "$CHANNEL_URL" \
+    setsid "$FFMPEG" -nostdin -y -loglevel error \
+        -probesize "$FFMPEG_PROBESIZE" -analyzeduration "$FFMPEG_ANALYZEDURATION" \
+        -fflags nobuffer -avioflags direct -max_delay 0 -i "$CHANNEL_URL" \
         -an -c:v copy -bsf:v h264_mp4toannexb -f h264 "$FIFO" \
         >"$LOG_DIR/network_tv_ffmpeg.log" 2>&1 &
     echo $! > "$PID_DIR/ffmpeg.pid"
@@ -78,6 +101,7 @@ stop() {
     done
     killall ffmpeg 2>/dev/null || true
     rm -f "$FIFO"
+    restore_services
     log "stopped"
 }
 
