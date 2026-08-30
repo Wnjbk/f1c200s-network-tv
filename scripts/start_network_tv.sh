@@ -54,7 +54,11 @@ start_usb() {
 
 start_wifi() {
     mkdir -p /var/run/wpa_supplicant "$LOG_DIR" "$PID_DIR"
-    ip link set "$IFACE" up 2>/dev/null || ifconfig "$IFACE" up
+    if command -v ip >/dev/null 2>&1; then
+        ip link set "$IFACE" up 2>/dev/null || true
+    elif command -v ifconfig >/dev/null 2>&1; then
+        ifconfig "$IFACE" up 2>/dev/null || true
+    fi
     if ! $CLI -i "$IFACE" status 2>/dev/null | grep -q 'wpa_state=COMPLETED'; then
         killall wpa24_aic_wfd_supplicant 2>/dev/null || true
         rm -f "/var/run/wpa_supplicant/$IFACE" "/run/wpa_supplicant/$IFACE"
@@ -71,11 +75,7 @@ start_wifi() {
     if ! $CLI -i "$IFACE" status 2>/dev/null | grep -q 'ip_address='; then
         udhcpc -i "$IFACE" -q -n -t 5 -T 2 >/dev/null 2>&1 || true
     fi
-    if command -v ip >/dev/null 2>&1; then
-        ip addr show "$IFACE" 2>/dev/null | grep -q 'inet ' || die "DHCP failed on $IFACE"
-    else
-        ifconfig "$IFACE" 2>/dev/null | grep -q 'inet addr:' || die "DHCP failed on $IFACE"
-    fi
+    $CLI -i "$IFACE" status 2>/dev/null | grep -q '^ip_address=' || die "DHCP failed on $IFACE"
 }
 
 start() {
