@@ -1,0 +1,5 @@
+*.o
+*.d
+cedar_drm_player.yuvlive
+*.log
+run/
