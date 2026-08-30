@@ -99,7 +99,7 @@ start() {
         -an -c:v copy -bsf:v h264_mp4toannexb -f h264 "$FIFO" \
         >"$LOG_DIR/network_tv_ffmpeg.log" 2>&1 &
     echo $! > "$PID_DIR/ffmpeg.pid"
-    log "started $CHANNEL_URL on $IFACE ($WIDTHx$HEIGHT@$FPS)"
+    log "started $CHANNEL_URL on $IFACE (${WIDTH}x${HEIGHT}@${FPS})"
 }
 
 stop() {
