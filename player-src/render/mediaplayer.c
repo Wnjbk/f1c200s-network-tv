@@ -1586,6 +1586,7 @@ int mediaplayer_start_raw_h264(mediaplayer_t *mp, const char *path,
     vConfig.nDecodeSmoothFrameBufferNum = BUF_CNT_4_SMOOTH;
     vConfig.memops = mp->memops;
     vConfig.nVbvBufferSize = VBVBUFFERSIZE;
+    vConfig.nFrameBufferNum = 4;
 
     int ret = InitializeVideoDecoder(mp->decoder, &vInfo, &vConfig);
     if (ret != 0) {
