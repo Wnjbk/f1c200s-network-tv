@@ -91,10 +91,10 @@ static void mp_configure_yuv_view_once(mediaplayer_t *mp, VideoPicture *picture)
 
     int src_w = picture->nWidth;
     int src_h = picture->nHeight;
-    int safe_x = mp_env_int("CEDAR_VIEW_X", 12);
-    int safe_y = mp_env_int("CEDAR_VIEW_Y", 0);
-    int safe_w = mp_env_int("CEDAR_VIEW_W", 360);
-    int safe_h = mp_env_int("CEDAR_VIEW_H", 640);
+    int safe_x = mp_env_int("CEDAR_VIEW_X", 80);
+    int safe_y = mp_env_int("CEDAR_VIEW_Y", 60);
+    int safe_w = mp_env_int("CEDAR_VIEW_W", 480);
+    int safe_h = mp_env_int("CEDAR_VIEW_H", 360);
     int stretch = mp_env_int("CEDAR_VIEW_STRETCH", 0);
     int out_w = safe_w;
     int out_h = safe_h;
