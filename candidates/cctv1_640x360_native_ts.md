@@ -3,7 +3,7 @@
 This candidate targets the 700 Kbit/s, 640x360 variant advertised by:
 
 ```text
-https://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL2.smil/playlist.m3u8
+http://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL2.smil/playlist.m3u8
 ```
 
 The public channel directory labels this source CCTV-1. Treat that label as

@@ -3,7 +3,7 @@
 # No FFmpeg, MPlayer, local media input, persistent media cache, or audio.
 set -eu
 
-URL=${1:-https://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL2.smil/playlist.m3u8}
+URL=${1:-http://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL2.smil/playlist.m3u8}
 PLAYER=${PLAYER:-/root/cedar_drm_player.yuvlive}
 EXTRACTOR=${EXTRACTOR:-$(dirname "$0")/ts_h264_extract}
 WIDTH=${WIDTH:-640}
