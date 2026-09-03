@@ -810,6 +810,10 @@ static void *mp_raw_h264_thread(void *param)
                     pthread_rwlock_unlock(&mp->thread.rwlock);
                     goto raw_done;
                 }
+                if ((pts / pts_step) < 8 || ((pts / pts_step) % 25) == 0) {
+                    log_info("raw access unit submitted: bytes=%d pts=%lld",
+                             packet_len, (long long)pts);
+                }
                 pts += pts_step;
                 break;
             }
@@ -925,6 +929,7 @@ static void *mp_decoder_thread(void *param)
         if (ret == VDECODE_RESULT_KEYFRAME_DECODED ||
             ret == VDECODE_RESULT_FRAME_DECODED) {
             int validNum = ValidPictureNum(decoder, 0);
+            log_info("DecodeVideoStream result=%d valid=%d", ret, validNum);
             if (validNum > 0) {
                 VideoPicture *picture = RequestPicture(decoder, 0);
                 if (!picture) {
