@@ -15,7 +15,9 @@ PLAYLIST=$ROOT/playlist.m3u8
 SEGMENT=$ROOT/segment.ts
 FIFO=$ROOT/video.h264
 PLAYER_LOG=${PLAYER_LOG:-/dev/shm/cctv1-640-native-ts-player.log}
-NO_PACE=${CEDAR_NO_PACE:-1}
+# Live HLS segments arrive as bursts. Keep Cedar's display clock enabled so
+# the decoder is not driven at filesystem speed by a completed TS segment.
+NO_PACE=${CEDAR_NO_PACE:-0}
 
 mkdir -p "$ROOT"
 mkfifo "$FIFO"

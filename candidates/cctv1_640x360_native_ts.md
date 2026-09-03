@@ -27,6 +27,12 @@ compiled as a Buildroot ARM user-space binary with:
   -Os -Wall -Wextra -o ts_h264_extract tools/ts_h264_extract.c
 ```
 
+The launcher keeps Cedar pacing enabled by default (`CEDAR_NO_PACE=0`): HLS
+downloads complete a ten-second segment as a burst, while display pacing lets
+the FIFO apply back-pressure instead of trying to decode that burst at storage
+speed. Set `CEDAR_NO_PACE=1` only for a bounded diagnostic; it is not a live
+playback setting.
+
 The candidate must be deployed only to a new board directory. Acceptance
 requires live source bytes, a running direct Cedar process, and two USB HDMI
 captures showing different advancing CCTV-1 frames. Any other channel, local
