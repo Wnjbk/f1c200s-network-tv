@@ -703,7 +703,7 @@ static void *mp_raw_h264_thread(void *param)
 
         for (;;) {
             int start = -1;
-            int next = -1;
+            int access_unit_end = -1;
             int i;
 
             for (i = 0; i + 3 < stream_len; i++) {
@@ -729,20 +729,34 @@ static void *mp_raw_h264_thread(void *param)
                 start = 0;
             }
 
-            for (i = 3; i + 3 < stream_len; i++) {
+            /*
+             * Cedar expects one complete H.264 access unit per submission.
+             * This live HLS stream marks every picture with an AUD (NAL 9),
+             * followed by optional SPS/PPS/SEI and the picture slice.  The
+             * older per-NAL path assigned a new PTS to each of those NALs,
+             * which turned one 25 fps picture stream into pseudo-frames.
+             */
+            for (i = 3; i + 4 < stream_len; i++) {
+                int next_start_code_len;
+                int nal_type;
+
                 if (stream_buf[i] == 0 && stream_buf[i + 1] == 0 &&
                     ((stream_buf[i + 2] == 1) ||
                      (stream_buf[i + 2] == 0 && stream_buf[i + 3] == 1))) {
-                    next = i;
-                    break;
+                    next_start_code_len = stream_buf[i + 2] == 1 ? 3 : 4;
+                    nal_type = stream_buf[i + next_start_code_len] & 0x1f;
+                    if (nal_type == 9) {
+                        access_unit_end = i;
+                        break;
+                    }
                 }
             }
 
-            if (next < 0) {
+            if (access_unit_end < 0) {
                 break;
             }
 
-            int packet_len = next;
+            int packet_len = access_unit_end;
             int trytime = 0;
             while (1) {
                 int validSize;
