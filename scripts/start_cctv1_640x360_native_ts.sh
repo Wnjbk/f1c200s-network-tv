@@ -66,7 +66,15 @@ while kill -0 "$PLAYER_PID" 2>/dev/null; do
     esac
     wget -qT 12 -t 1 -O "$SEGMENT" "$segment_url" || { rm -f "$SEGMENT"; sleep 2; continue; }
     last=$line
-    "$EXTRACTOR" "$SEGMENT" >&3 || { rm -f "$SEGMENT"; break; }
+    # The extractor validates the complete TS before writing any bytes. A bad
+    # WLAN download is therefore safe to discard and retry without poisoning
+    # Cedar's persistent FIFO with a partial access-unit sequence.
+    "$EXTRACTOR" "$SEGMENT" >&3 || {
+        rm -f "$SEGMENT"
+        last=
+        sleep 1
+        continue
+    }
     rm -f "$SEGMENT"
 done
 

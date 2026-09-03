@@ -33,6 +33,11 @@ the FIFO apply back-pressure instead of trying to decode that burst at storage
 speed. Set `CEDAR_NO_PACE=1` only for a bounded diagnostic; it is not a live
 playback setting.
 
+Before extracting a segment, `ts_h264_extract` verifies complete 188-byte TS
+packet sync through the end of the file. A malformed WLAN download emits no
+H.264 bytes and the launcher discards it, then retries; it never turns a
+partial segment into a false end of the Cedar FIFO stream.
+
 The candidate must be deployed only to a new board directory. Acceptance
 requires live source bytes, a running direct Cedar process, and two USB HDMI
 captures showing different advancing CCTV-1 frames. Any other channel, local

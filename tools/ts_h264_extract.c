@@ -133,6 +133,35 @@ static int emit_pes(const uint8_t *data, size_t len, int pusi)
     return write_all(data, len);
 }
 
+/*
+ * A wireless HLS download can occasionally be truncated or corrupted. Do not
+ * emit a valid prefix of such a segment into the live FIFO: that turns the
+ * decoder input into an unexpected EOS. Validate packet alignment first, then
+ * rewind and perform PAT/PMT/PES extraction only for a complete segment.
+ */
+static int validate_ts(FILE *input)
+{
+    uint8_t packet[TS_PACKET_SIZE];
+    int packets = 0;
+
+    while (fread(packet, 1, sizeof(packet), input) == sizeof(packet)) {
+        if (packet[0] != 0x47) {
+            fprintf(stderr, "TS sync loss after %d packets\n", packets);
+            return -1;
+        }
+        packets++;
+    }
+    if (ferror(input) || !feof(input)) {
+        fprintf(stderr, "TS read failure after %d packets\n", packets);
+        return -1;
+    }
+    if (packets == 0) {
+        fprintf(stderr, "empty TS segment\n");
+        return -1;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     FILE *input;
@@ -151,17 +180,17 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    if (validate_ts(input) != 0 || fseek(input, 0, SEEK_SET) != 0) {
+        fclose(input);
+        return 1;
+    }
+
     while (fread(packet, 1, sizeof(packet), input) == sizeof(packet)) {
         uint16_t pid;
         int pusi;
         size_t len;
         const uint8_t *data;
 
-        if (packet[0] != 0x47) {
-            fprintf(stderr, "TS sync loss after %d packets\n", packets);
-            fclose(input);
-            return 1;
-        }
         packets++;
         pid = ((uint16_t)(packet[1] & 0x1f) << 8) | packet[2];
         pusi = (packet[1] & 0x40) != 0;
