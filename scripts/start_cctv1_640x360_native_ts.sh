@@ -10,6 +10,7 @@ WIDTH=${WIDTH:-640}
 HEIGHT=${HEIGHT:-360}
 FPS=${FPS:-25}
 ROOT=/dev/shm/cctv1-640-native-ts-$$
+MASTER=$ROOT/master.m3u8
 PLAYLIST=$ROOT/playlist.m3u8
 SEGMENT=$ROOT/segment.ts
 FIFO=$ROOT/video.h264
@@ -41,7 +42,19 @@ exec 3>"$FIFO"
 last=
 base=${URL%/*}/
 while kill -0 "$PLAYER_PID" 2>/dev/null; do
-    wget -qT 10 -t 1 -O "$PLAYLIST" "$URL" || { sleep 2; continue; }
+    wget -qT 10 -t 1 -O "$MASTER" "$URL" || { sleep 2; continue; }
+    # The selected CCTV source is a master playlist. Resolve only its
+    # advertised 640x360 variant; direct media playlists still work too.
+    variant=$(sed -n '/RESOLUTION=640x360/{n;p;q;}' "$MASTER")
+    if [ -n "$variant" ]; then
+        case "$variant" in
+            http://*|https://*) variant_url=$variant ;;
+            *) variant_url=$base$variant ;;
+        esac
+        wget -qT 10 -t 1 -O "$PLAYLIST" "$variant_url" || { sleep 2; continue; }
+    else
+        cp "$MASTER" "$PLAYLIST"
+    fi
     line=$(sed -n '/^[^#]/p' "$PLAYLIST" | tail -n 1)
     [ -n "$line" ] || { sleep 2; continue; }
     [ "$line" = "$last" ] && { sleep 2; continue; }
