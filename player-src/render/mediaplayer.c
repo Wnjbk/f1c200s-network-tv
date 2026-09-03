@@ -1182,6 +1182,8 @@ int mediaplayer_play_video(mediaplayer_t *mp, const char *file)
     vConfig.nDecodeSmoothFrameBufferNum = BUF_CNT_4_SMOOTH;
     vConfig.memops = mp->memops;
     vConfig.nVbvBufferSize = VBVBUFFERSIZE;
+    /* Bound direct file/URI H.264 decode buffers for the 32 MiB CMA runtime. */
+    vConfig.nFrameBufferNum = 4;
 
     ret = InitializeVideoDecoder(mp->decoder, &vInfo, &vConfig);
     if (ret != 0) {
@@ -1450,6 +1452,8 @@ int mediaplayer_start(mediaplayer_t *mp)
     vConfig.nDecodeSmoothFrameBufferNum = BUF_CNT_4_SMOOTH;
     vConfig.memops = mp->memops;
     vConfig.nVbvBufferSize = VBVBUFFERSIZE;
+    /* Bound direct file/URI H.264 decode buffers for the 32 MiB CMA runtime. */
+    vConfig.nFrameBufferNum = 4;
 
     ret = InitializeVideoDecoder(mp->decoder, &vInfo, &vConfig);
     if (ret != 0) {
