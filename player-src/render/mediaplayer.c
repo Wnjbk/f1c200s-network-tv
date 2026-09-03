@@ -1175,6 +1175,14 @@ int mediaplayer_play_video(mediaplayer_t *mp, const char *file)
 
     mp->framerate = vInfo.nFrameRate;
 
+    /* Cedar hardware output scale-down: 1280x720 -> 640x360. */
+    vConfig.bScaleDownEn = 1;
+    vConfig.nHorizonScaleDownRatio = 1;
+    vConfig.nVerticalScaleDownRatio = 1;
+    /* Cedar hardware output scale-down: 1280x720 -> 640x360. */
+    vConfig.bScaleDownEn = 1;
+    vConfig.nHorizonScaleDownRatio = 1;
+    vConfig.nVerticalScaleDownRatio = 1;
     vConfig.eOutputPixelFormat  = PIXEL_FORMAT_YUV_MB32_420;
     vConfig.nDeInterlaceHoldingFrameBufferNum = BUF_CNT_4_DI;
     vConfig.nDisplayHoldingFrameBufferNum = BUF_CNT_4_LIST;
